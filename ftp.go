@@ -613,6 +613,49 @@ func (c *ServerConn) List(path string) (entries []*Entry, err error) {
 	return entries, err
 }
 
+func (c *ServerConn) WalkPathFile(path string, fn func(entry *Entry)) error {
+	var cmd string
+	var parser parseFunc
+
+	if c.mlstSupported {
+		cmd = "MLSD"
+		parser = parseRFC3659ListLine
+	} else {
+		cmd = "LIST"
+		parser = parseListLine
+	}
+
+	space := " "
+	if path == "" {
+		space = ""
+	}
+	conn, err := c.cmdDataConnFrom(0, "%s%s%s", cmd, space, path)
+	if err != nil {
+		return err
+	}
+
+	r := &Response{conn: conn, c: c}
+	defer func() {
+		errClose := r.Close()
+		if err == nil {
+			err = errClose
+		}
+	}()
+
+	scanner := bufio.NewScanner(r)
+	now := time.Now()
+	for scanner.Scan() {
+		entry, errParse := parser(scanner.Text(), now, c.options.location)
+		if errParse == nil {
+			fn(entry)
+		}
+	}
+
+	err = scanner.Err()
+
+	return err
+}
+
 // ChangeDir issues a CWD FTP command, which changes the current directory to
 // the specified path.
 func (c *ServerConn) ChangeDir(path string) error {
