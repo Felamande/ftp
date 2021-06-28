@@ -644,8 +644,10 @@ func (c *ServerConn) WalkPathFile(path string, fn func(entry Entry)) error {
 
 	scanner := bufio.NewScanner(r)
 	now := time.Now()
+	entry := new(Entry)
+	var errParse error
 	for scanner.Scan() {
-		entry, errParse := parser(scanner.Text(), now, c.options.location)
+		entry, errParse = parser(scanner.Text(), now, c.options.location)
 		if errParse == nil {
 			fn(*entry)
 		}
