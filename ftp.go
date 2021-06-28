@@ -613,7 +613,7 @@ func (c *ServerConn) List(path string) (entries []*Entry, err error) {
 	return entries, err
 }
 
-func (c *ServerConn) WalkPathFile(path string, fn func(entry *Entry)) error {
+func (c *ServerConn) WalkPathFile(path string, fn func(entry Entry)) error {
 	var cmd string
 	var parser parseFunc
 
@@ -647,7 +647,7 @@ func (c *ServerConn) WalkPathFile(path string, fn func(entry *Entry)) error {
 	for scanner.Scan() {
 		entry, errParse := parser(scanner.Text(), now, c.options.location)
 		if errParse == nil {
-			fn(entry)
+			fn(*entry)
 		}
 	}
 
